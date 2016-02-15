@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+  input[type="text"], span.display {
+    font-size: 24px;
+    line-height: 32px;
+    font-family: Roboto, Helvetica, Sans-Serif;
+    border: 2px solid #ccc;
+    padding: 2px;
+    width: 800px;
+    overflow: hidden;
+    white-space: pre;
+    border-radius: 4px;
+    margin: 0;
+    display: block;
+    position: relative;
+  }
+  span.display {
+    border-color: transparent;
+    min-height: 0;
+  }
+
+  .outer {
+    display: flex;
+    flex-flow: column;
+    align-items: center;
+  }
+
+  .exact {
+    position: absolute;
+    text-align: center;
+    border-radius: 2px;
+    border-bottom: 2px solid #77c;
+  }
+  </style>
+</head>
+<body>
+
+<div class="outer">
+  <div>
+    <input type="text" id="src" placeholder="The quick brown fox jumped over the lazy dog" />
+    <span class="display"><span id="dst"></span></span>
+  </div>
+</div>
+
+<script>
+  var map = {
+    'smile': '😀',
+    'poo': '💩',
+    'kiss': '😘',
+    'australia': '🙃',
+    'fox': '🐹',  // TODO: fallback based on platform inclusion?
+  };
+
+  var parse = function(s) {
+    // TODO: stem etc
+    return s.toLowerCase();
+  };
+
+  var update = (function() {
+    var src = document.getElementById('src');
+    var dst = document.getElementById('dst');
+
+    var match = /(\w+)\s*/;
+    var prev = undefined;
+
+    var fn = function() {
+      var value = src.value || src.placeholder;
+      if (value == prev) {
+        return;
+      }
+      prev = value;
+
+      dst.textContent = '';
+      var done = '';
+
+      var data = [];
+
+      while (value.length) {
+        var out = value.match(match);
+        if (!out) {
+          break;
+        }
+
+        // Compute current parsed amount.
+        dst.textContent = done;
+        var left = dst.getBoundingClientRect().width;
+
+        dst.textContent = done + out[1];
+        var right = dst.getBoundingClientRect().width;
+
+        var consumed = out[0];
+        done += consumed;
+        value = value.substr(consumed.length);
+
+        var word = parse(out[1]);
+        var emoji = map[word];
+        data.push({
+          left: left,
+          right: right,
+          text: emoji,
+        });
+      }
+
+      // Now, draw each emoji at its correct place.
+      dst.textContent = '';
+      data.forEach(function(x) {
+        var s = document.createElement('span');
+        s.className = 'exact';
+        s.style.left = x.left + 'px';
+        s.style.width = (x.right - x.left) + 'px';
+        s.textContent = x.text;
+
+        if (x.text) {
+          dst.appendChild(s);
+        }
+        dst.appendChild(document.createTextNode(' '));
+      });
+
+    };
+    src.addEventListener('keyup', fn);
+    return fn;
+  }());
+
+  update();
+
+</script>
+
+</body>
+</html>
